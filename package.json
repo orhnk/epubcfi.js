@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "epub-cfi-generator": "^0.2.2"
+  }
+}
