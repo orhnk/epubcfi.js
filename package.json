@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "epub-cfi-generator": "^0.2.2",
-    "epubjs": "^0.3.93"
+    "epub-cfi-generator": "^0.2.2"
   }
 }
