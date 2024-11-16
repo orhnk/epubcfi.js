@@ -11,17 +11,13 @@ if (!epubFilePath || !searchText) {
   process.exit(1);
 }
 
-// Ensure the EPUB file exists
 if (!fs.existsSync(epubFilePath)) {
   console.error(`Error: File not found at ${epubFilePath}`);
   process.exit(1);
 }
 
-// Define the output JSON file path and cache file path
 const outputJsonPath = path.join(__dirname, "cfi_output.json");
 const cacheFilePath = path.join(__dirname, "cfi_cache.json");
-
-// Path to the local epub-cfi-generator binary
 const epubCfiGeneratorPath = path.join(
   __dirname,
   "node_modules",
@@ -29,7 +25,6 @@ const epubCfiGeneratorPath = path.join(
   "epub-cfi-generator",
 );
 
-// Helper function to generate a unique hash for the EPUB file
 const generateFileHash = (filePath) => {
   const hash = crypto.createHash("sha256");
   const fileBuffer = fs.readFileSync(filePath);
@@ -37,20 +32,15 @@ const generateFileHash = (filePath) => {
   return hash.digest("hex");
 };
 
-// Check if cache exists and is still valid
 const isCacheValid = () => {
   if (!fs.existsSync(cacheFilePath)) {
     return false;
   }
-
   const cacheData = JSON.parse(fs.readFileSync(cacheFilePath, "utf8"));
   const epubHash = generateFileHash(epubFilePath);
-
-  // Check if the cache is valid by comparing the hash of the EPUB file
   return cacheData.epubHash === epubHash;
 };
 
-// Retrieve CFIs from the cache or regenerate them
 const getCfis = (callback) => {
   if (isCacheValid()) {
     console.log("Using cached CFI data...");
@@ -66,28 +56,19 @@ const getCfis = (callback) => {
           callback(error);
           return;
         }
-
-        // Read the generated JSON file
         fs.readFile(outputJsonPath, "utf8", (err, data) => {
           if (err) {
             console.error(`Error reading output JSON: ${err.message}`);
             callback(err);
             return;
           }
-
           const cfiData = JSON.parse(data);
-
-          // Cache the generated CFI data
           const cacheData = {
             epubHash: generateFileHash(epubFilePath),
             cfiData,
           };
-
           fs.writeFileSync(cacheFilePath, JSON.stringify(cacheData, null, 2));
-
-          // Remove the temporary JSON file
           fs.unlinkSync(outputJsonPath);
-
           callback(null, cfiData);
         });
       },
@@ -95,18 +76,63 @@ const getCfis = (callback) => {
   }
 };
 
-// Search for the text in the CFI data
-const searchCfiData = (cfiData, searchText) => {
-  let found = false;
+const normalizeWhitespace = (text) => {
+  // Replace multiple spaces/tabs/newlines with a single space
+  return text.replace(/\s+/g, " ").trim();
+};
 
-  for (const heading of cfiData) {
-    for (const section of heading.content) {
-      if (section.node.includes(searchText)) {
-        console.log(`Found text at CFI: ${section.cfi}`);
+const searchCfiData = (cfiData, searchText) => {
+  // Normalize the search text to avoid whitespace issues
+  const normalizedSearchText = normalizeWhitespace(searchText);
+
+  let found = false;
+  const flattened = cfiData.flatMap((heading) =>
+    heading.content.map((section) => ({
+      node: normalizeWhitespace(section.node), // Normalize node content
+      cfi: section.cfi,
+    }))
+  );
+
+  for (let i = 0; i < flattened.length; i++) {
+    let combinedText = "";
+    let combinedCfis = [];
+    let charMap = [];
+    let startCfi = "";
+    let endCfi = "";
+
+    for (let j = i; j < flattened.length; j++) {
+      const currentNode = flattened[j];
+      charMap.push({ cfi: currentNode.cfi, start: combinedText.length });
+      combinedText += (j > i ? " " : "") + currentNode.node;
+      charMap[charMap.length - 1].end = combinedText.length;
+
+      // Check if the normalized search text is found in the combined text
+      if (combinedText.includes(normalizedSearchText)) {
+        const startIdx = combinedText.indexOf(normalizedSearchText);
+        const endIdx = startIdx + normalizedSearchText.length;
+
+        for (const map of charMap) {
+          if (startIdx >= map.start && startIdx < map.end) {
+            startCfi = map.cfi;
+          }
+          if (endIdx > map.start && endIdx <= map.end) {
+            endCfi = map.cfi;
+          }
+        }
+
+        console.log(
+          `Found text spanning multiple nodes! Start CFI: ${startCfi}, End CFI: ${endCfi}`,
+        );
         found = true;
         break;
       }
+
+      // Prevent unnecessary long concatenations
+      if (combinedText.length > normalizedSearchText.length * 2) {
+        break;
+      }
     }
+
     if (found) break;
   }
 
@@ -115,12 +141,9 @@ const searchCfiData = (cfiData, searchText) => {
   }
 };
 
-// Main logic
 getCfis((error, cfiData) => {
   if (error) {
     process.exit(1);
   }
-
-  // Search the CFI data for the specified text
   searchCfiData(cfiData, searchText);
 });
