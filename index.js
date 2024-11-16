@@ -99,29 +99,41 @@ const searchCfiData = (cfiData, searchText) => {
     let charMap = [];
     let startCfi = "";
     let endCfi = "";
+    let startOffset = -1;
+    let endOffset = -1;
 
     for (let j = i; j < flattened.length; j++) {
       const currentNode = flattened[j];
-      charMap.push({ cfi: currentNode.cfi, start: combinedText.length });
-      combinedText += (j > i ? " " : "") + currentNode.node;
-      charMap[charMap.length - 1].end = combinedText.length;
+      const currentText = currentNode.node;
+      const currentTextLength = currentText.length;
+
+      charMap.push({
+        cfi: currentNode.cfi,
+        start: combinedText.length,
+        end: combinedText.length + currentTextLength,
+      });
+
+      combinedText += (j > i ? " " : "") + currentText;
 
       // Check if the normalized search text is found in the combined text
       if (combinedText.includes(normalizedSearchText)) {
         const startIdx = combinedText.indexOf(normalizedSearchText);
         const endIdx = startIdx + normalizedSearchText.length;
 
+        // Now we find the exact CFIs for the start and end of the match
         for (const map of charMap) {
           if (startIdx >= map.start && startIdx < map.end) {
             startCfi = map.cfi;
+            startOffset = startIdx - map.start;
           }
           if (endIdx > map.start && endIdx <= map.end) {
             endCfi = map.cfi;
+            endOffset = endIdx - map.start;
           }
         }
 
         console.log(
-          `Found text spanning multiple nodes! Start CFI: ${startCfi}, End CFI: ${endCfi}`,
+          `Found text spanning multiple nodes! Start CFI: ${startCfi}, Start Offset: ${startOffset}, End CFI: ${endCfi}, End Offset: ${endOffset}`,
         );
         found = true;
         break;
