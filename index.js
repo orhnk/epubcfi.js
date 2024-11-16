@@ -118,18 +118,18 @@ const searchCfiData = (cfiData, searchText) => {
 
       // Check if the normalized search text is found in the combined text
       if (combinedText.includes(normalizedSearchText)) {
-        const startIdx = combinedText.indexOf(normalizedSearchText);
+        const startIdx = combinedText.indexOf(normalizedSearchText) - 1;
         const endIdx = startIdx + normalizedSearchText.length;
 
         // Find the start and end CFIs from the charMap
         for (const map of charMap) {
           if (startIdx >= map.start && startIdx < map.end) {
             startCfi = map.cfi;
-            startOffset = startIdx - map.start - 1; // Subtract 1 to fix the off-by-one error
+            startOffset = startIdx - map.start; // Subtract 1 to fix the off-by-one error
           }
           if (endIdx > map.start && endIdx <= map.end) {
             endCfi = map.cfi;
-            endOffset = endIdx - map.start - 1; // Subtract 1 to fix the off-by-one error
+            endOffset = endIdx - map.start; // Subtract 1 to fix the off-by-one error
           }
         }
 
