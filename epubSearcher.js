@@ -17,6 +17,13 @@ const generateFileHash = (filePath) => {
   return hash.digest("hex");
 };
 
+const getUniqueFilePaths = (epubFilePath) => {
+  const epubHash = generateFileHash(epubFilePath);
+  const cacheFilePath = path.join(__dirname, `cfi_cache_${epubHash}.json`);
+  const outputJsonPath = path.join(__dirname, `cfi_output_${epubHash}.json`);
+  return { cacheFilePath, outputJsonPath };
+};
+
 const isCacheValid = (epubFilePath, cacheFilePath) => {
   if (!fs.existsSync(cacheFilePath)) {
     return false;
@@ -151,8 +158,7 @@ const searchEpub = async (epubFilePath, searchText) => {
     throw new Error(`File not found at ${epubFilePath}`);
   }
 
-  const outputJsonPath = path.join(__dirname, "cfi_output.json");
-  const cacheFilePath = path.join(__dirname, "cfi_cache.json");
+  const { cacheFilePath, outputJsonPath } = getUniqueFilePaths(epubFilePath);
 
   const cfiData = await getCfis(epubFilePath, cacheFilePath, outputJsonPath);
   return searchCfiData(cfiData, searchText);
