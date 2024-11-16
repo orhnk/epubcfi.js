@@ -82,31 +82,32 @@ const normalizeWhitespace = (text) => {
 };
 
 const searchCfiData = (cfiData, searchText) => {
-  // Normalize the search text to avoid whitespace issues
   const normalizedSearchText = normalizeWhitespace(searchText);
-
   let found = false;
+
+  // Flatten the content for easier search across nodes
   const flattened = cfiData.flatMap((heading) =>
     heading.content.map((section) => ({
-      node: normalizeWhitespace(section.node), // Normalize node content
+      node: normalizeWhitespace(section.node),
       cfi: section.cfi,
     }))
   );
 
   for (let i = 0; i < flattened.length; i++) {
     let combinedText = "";
-    let combinedCfis = [];
     let charMap = [];
     let startCfi = "";
     let endCfi = "";
     let startOffset = -1;
     let endOffset = -1;
 
+    // Iterate over nodes to find where the search text is located
     for (let j = i; j < flattened.length; j++) {
       const currentNode = flattened[j];
       const currentText = currentNode.node;
       const currentTextLength = currentText.length;
 
+      // Track character offsets
       charMap.push({
         cfi: currentNode.cfi,
         start: combinedText.length,
@@ -120,18 +121,19 @@ const searchCfiData = (cfiData, searchText) => {
         const startIdx = combinedText.indexOf(normalizedSearchText);
         const endIdx = startIdx + normalizedSearchText.length;
 
-        // Now we find the exact CFIs for the start and end of the match
+        // Find the start and end CFIs from the charMap
         for (const map of charMap) {
           if (startIdx >= map.start && startIdx < map.end) {
             startCfi = map.cfi;
-            startOffset = startIdx - map.start;
+            startOffset = startIdx - map.start - 1; // Subtract 1 to fix the off-by-one error
           }
           if (endIdx > map.start && endIdx <= map.end) {
             endCfi = map.cfi;
-            endOffset = endIdx - map.start;
+            endOffset = endIdx - map.start - 1; // Subtract 1 to fix the off-by-one error
           }
         }
 
+        // Output the found results with start and end CFIs and offsets
         console.log(
           `Found text spanning multiple nodes! Start CFI: ${startCfi}, Start Offset: ${startOffset}, End CFI: ${endCfi}, End Offset: ${endOffset}`,
         );
@@ -139,7 +141,7 @@ const searchCfiData = (cfiData, searchText) => {
         break;
       }
 
-      // Prevent unnecessary long concatenations
+      // Prevent unnecessary long concatenations once we have enough text
       if (combinedText.length > normalizedSearchText.length * 2) {
         break;
       }
