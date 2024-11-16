@@ -77,15 +77,49 @@ const getCfis = (callback) => {
 };
 
 const normalizeWhitespace = (text) => {
-  // Replace multiple spaces/tabs/newlines with a single space
   return text.replace(/\s+/g, " ").trim();
+};
+
+const formatEpubCfi = (startCfi, endCfi, startOffset, endOffset) => {
+  // Extract the path and offset from both the start and end CFIs
+  const [startPath, startOffsetValue] = startCfi.split(":");
+  const [endPath, endOffsetValue] = endCfi.split(":");
+
+  // Remove the final segment (last /n) from both paths
+  const sanitizedStartPath = startPath.replace(/\/\d+$/, "");
+  const sanitizedEndPath = endPath.replace(/\/\d+$/, "");
+
+  // Find the common part of the path
+  let commonPart = "";
+  const startPathParts = sanitizedStartPath.split("/");
+  const endPathParts = sanitizedEndPath.split("/");
+
+  // Loop through both paths and find the common segment
+  let i = 0;
+  while (
+    i < startPathParts.length && i < endPathParts.length &&
+    startPathParts[i] === endPathParts[i]
+  ) {
+    commonPart = `${commonPart}/${startPathParts[i]}`;
+    i++;
+  }
+
+  // Extract the last dissimilar segments (before the offsets)
+  const dissimilarStart = startPath.slice(commonPart.length);
+  const dissimilarEnd = endPath.slice(commonPart.length);
+
+  // Determine if we need to include the last segment in the dissimilar part
+  const startEntity = `/${dissimilarStart}:${startOffset}`;
+  const endEntity = `/${dissimilarEnd}:${endOffset}`;
+
+  // Format the result as epubcfi({common_part},{start_entity},{end_entity})
+  return `epubcfi(${commonPart.slice(1)},${startEntity},${endEntity})`;
 };
 
 const searchCfiData = (cfiData, searchText) => {
   const normalizedSearchText = normalizeWhitespace(searchText);
   let found = false;
 
-  // Flatten the content for easier search across nodes
   const flattened = cfiData.flatMap((heading) =>
     heading.content.map((section) => ({
       node: normalizeWhitespace(section.node),
@@ -101,13 +135,11 @@ const searchCfiData = (cfiData, searchText) => {
     let startOffset = -1;
     let endOffset = -1;
 
-    // Iterate over nodes to find where the search text is located
     for (let j = i; j < flattened.length; j++) {
       const currentNode = flattened[j];
       const currentText = currentNode.node;
       const currentTextLength = currentText.length;
 
-      // Track character offsets
       charMap.push({
         cfi: currentNode.cfi,
         start: combinedText.length,
@@ -116,32 +148,31 @@ const searchCfiData = (cfiData, searchText) => {
 
       combinedText += (j > i ? " " : "") + currentText;
 
-      // Check if the normalized search text is found in the combined text
       if (combinedText.includes(normalizedSearchText)) {
         const startIdx = combinedText.indexOf(normalizedSearchText) - 1;
         const endIdx = startIdx + normalizedSearchText.length;
 
-        // Find the start and end CFIs from the charMap
         for (const map of charMap) {
           if (startIdx >= map.start && startIdx < map.end) {
             startCfi = map.cfi;
-            startOffset = startIdx - map.start; // Subtract 1 to fix the off-by-one error
+            startOffset = startIdx - map.start;
           }
           if (endIdx > map.start && endIdx <= map.end) {
             endCfi = map.cfi;
-            endOffset = endIdx - map.start; // Subtract 1 to fix the off-by-one error
+            endOffset = endIdx - map.start;
           }
         }
 
-        // Output the found results with start and end CFIs and offsets
+        // Format and output the result with EPUB CFI format
         console.log(
-          `Found text spanning multiple nodes! Start CFI: ${startCfi}, Start Offset: ${startOffset}, End CFI: ${endCfi}, End Offset: ${endOffset}`,
+          `Found text spanning multiple nodes! ${
+            formatEpubCfi(startCfi, endCfi, startOffset, endOffset)
+          }`,
         );
         found = true;
         break;
       }
 
-      // Prevent unnecessary long concatenations once we have enough text
       if (combinedText.length > normalizedSearchText.length * 2) {
         break;
       }
