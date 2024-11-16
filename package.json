@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "epub-cfi-generator": "^0.2.2"
+    "epub-cfi-generator": "^0.2.2",
+    "sqlite3": "^5.1.7"
   }
 }
