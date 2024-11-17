@@ -1,55 +1,4 @@
 {
-  "metadata": {
-    "title": "Bir Dinozorun Anıları",
-    "sortAs": null,
-    "language": [
-      "tr"
-    ],
-    "identifier": "urn:isbn:9789750828393",
-    "description": "İngiliz edebiyatı 'duayenimiz' Mîna Urgan, bu kez anılarıyla, bir yaşama ustası olarak karşımızda. Mîna Urgan Bir Dinozorun Anıları'nda açıkyürekli, yalın ve naif bir dille anlatıyor; kendini, çevresindekileri ve bir coğrafyada olan biteni... Halide Edip, Necip Fazıl, Abidin Dino, Neyzen Tevfik, Sait Faik, Yahya Kemal, Ahmet Haşim, Atatürk ve başka pek çok isimle zenginleşmiş bir ömrü... \n'Oğuz Atay'ı ayaküstü ve o kadar az gördüm ki, onunla ilgili ancak bir tek izlenim edindim: Koskocaman bir kediye benziyordu tıpkı. Çok kocaman ve çok güzel bir kediye öyle benziyordu ki, ona ilimi uzatınca 'miyaav' diyeceğini sandım. Miyavlayacağı yerde 'tanıştığımıza memnunum' deyince şaşırıp kaldım.' \nMîna Urgan'ın anılarını bazen coşkuyla bazen buruklukla ama hep gülümseyerek okuyacaksınız. özellikle yakın tarihimizi en yalın dille bu kitap da bulabilirsiniz.",
-    "publisher": "Yapı Kredi Yayınları",
-    "published": "1997-12-31T22:00:00+00:00",
-    "modified": "2013-12-17T12:00:00Z",
-    "subject": [
-      {
-        "name": "Biyografi",
-        "code": null,
-        "scheme": null
-      },
-      {
-        "name": "Gerçek",
-        "code": null,
-        "scheme": null
-      },
-      {
-        "name": "Tarih",
-        "code": null,
-        "scheme": null
-      },
-      {
-        "name": "Orijinal",
-        "code": null,
-        "scheme": null
-      }
-    ],
-    "author": [
-      {
-        "name": "Mîna Urgan",
-        "sortAs": "Urgan, Mîna"
-      }
-    ],
-    "producer": [
-      {
-        "name": "calibre (1.45.0) [http://calibre-ebook.com]",
-        "sortAs": null
-      }
-    ]
-  },
-  "progress": [
-    255,
-    508
-  ],
-  "lastLocation": "epubcfi(/6/18!/4/2,/24,/46/1:982)",
   "annotations": [
     {
       "value": "epubcfi(/6/8!/4/2,/3:0,/3:7)",
@@ -100,7 +49,7 @@
       "modified": ""
     },
     {
-      "value": "epubcfi(/6/10!/4/2/122/3:238,/6/10!/4/2/122/3:927)",
+      "value": "epubcfi(/6/10!/4/2/122,/3:238,/3:927)",
       "color": "yellow",
       "text": "Bir gün ona yemek yedirirken, oyalansın diye, önüne bir dergi koymuştum. Aldığım çoğu dergiler gibi bu da solcu bir dergiydi elbette. Stalin’in bir fotoğrafı vardı orada. Mustafa, Stalin’in ünlü bıyığını göstererek “bu ne?” dedi. “Bıyık” dedim. Sonra “benim bıyığım nerede?” diye sordum. (Gerçi Ece Ayhan beni “bıyıklı kadınlar” arasına sokarak onurlandırdı ama, Stalin’in bıyığı yanında benimkisi solda sıfır sayılır.) Bir buçuk yaşında Mustafa annesine güvenini henüz yitirmediği için, bunu sorduğuma göre, benim de mutlaka bir bıyığımın olacağını düşündü. Yüzümü dikkatle uzun uzun inceledi. Sonra, işaret parmağını cımbız değmemiş kalın kaşlarımın üstüne koyarak, “işte bıyık bu” dedi.",
       "note": "",

@@ -147,6 +147,8 @@ const searchCfiData = (cfiData, searchText) => {
       combinedText += (j > i ? " " : "") + currentText;
 
       if (combinedText.includes(normalizedSearchText)) {
+        console.log("Current Node:", currentNode.node);
+        console.log("Lenght of the combinedText:", combinedText.length);
         const startIdx = combinedText.indexOf(normalizedSearchText) - 1;
         const endIdx = startIdx + normalizedSearchText.length;
 
