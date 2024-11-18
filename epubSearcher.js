@@ -17,47 +17,50 @@ const generateFileHash = (filePath) => {
   return hash.digest("hex");
 };
 
-const getUniqueFilePaths = (epubFilePath) => {
-  const epubHash = generateFileHash(epubFilePath);
-  const cacheFilePath = path.join(__dirname, `cfi_cache_${epubHash}.json`);
-  const outputJsonPath = path.join(__dirname, `cfi_output_${epubHash}.json`);
-  return { cacheFilePath, outputJsonPath };
+const getBookName = (filePath) => {
+  return path.basename(filePath, path.extname(filePath)).replace(/\s+/g, "_");
 };
 
-const isCacheValid = (epubFilePath, cacheFilePath) => {
-  if (!fs.existsSync(cacheFilePath)) {
+const isDatabaseValid = (epubFilePath, databaseFilePath) => {
+  if (!fs.existsSync(databaseFilePath)) {
     return false;
   }
-  const cacheData = JSON.parse(fs.readFileSync(cacheFilePath, "utf8"));
+  const databaseData = JSON.parse(fs.readFileSync(databaseFilePath, "utf8"));
   const epubHash = generateFileHash(epubFilePath);
-  return cacheData.epubHash === epubHash;
+  return databaseData.epubHash === epubHash;
 };
 
-const getCfis = (epubFilePath, cacheFilePath, outputJsonPath) => {
+const getCfis = (epubFilePath, databaseFilePath, generatorOutputPath) => {
   return new Promise((resolve, reject) => {
-    if (isCacheValid(epubFilePath, cacheFilePath)) {
-      const cachedData = JSON.parse(fs.readFileSync(cacheFilePath, "utf8"));
-      resolve(cachedData.cfiData);
+    if (isDatabaseValid(epubFilePath, databaseFilePath)) {
+      const databaseData = JSON.parse(
+        fs.readFileSync(databaseFilePath, "utf8"),
+      );
+      resolve(databaseData.cfiData);
     } else {
       exec(
-        `"${epubCfiGeneratorPath}" "${epubFilePath}" "${outputJsonPath}"`,
+        `"${epubCfiGeneratorPath}" "${epubFilePath}" "${generatorOutputPath}"`,
         (error, stdout, stderr) => {
           if (error) {
             return reject(new Error(`Error generating CFIs: ${stderr}`));
           }
-          fs.readFile(outputJsonPath, "utf8", (err, data) => {
+          fs.readFile(generatorOutputPath, "utf8", (err, data) => {
             if (err) {
               return reject(
-                new Error(`Error reading output JSON: ${err.message}`),
+                new Error(
+                  `Error reading generator output JSON: ${err.message}`,
+                ),
               );
             }
             const cfiData = JSON.parse(data);
-            const cacheData = {
+            const databaseData = {
               epubHash: generateFileHash(epubFilePath),
               cfiData,
             };
-            fs.writeFileSync(cacheFilePath, JSON.stringify(cacheData, null, 2));
-            fs.unlinkSync(outputJsonPath);
+            fs.writeFileSync(
+              databaseFilePath,
+              JSON.stringify(databaseData, null, 2),
+            );
             resolve(cfiData);
           });
         },
@@ -66,8 +69,37 @@ const getCfis = (epubFilePath, cacheFilePath, outputJsonPath) => {
   });
 };
 
-const normalizeWhitespace = (text) => {
-  return text.replace(/\s+/g, " ").trim();
+const getCfisSync = (epubFilePath, databaseFilePath, generatorOutputPath) => {
+  if (isDatabaseValid(epubFilePath, databaseFilePath)) {
+    const databaseData = JSON.parse(fs.readFileSync(databaseFilePath, "utf8"));
+    return databaseData.cfiData;
+  } else {
+    try {
+      // Execute epub-cfi-generator synchronously
+      const execSync = require("child_process").execSync;
+      execSync(
+        `"${epubCfiGeneratorPath}" "${epubFilePath}" "${generatorOutputPath}"`,
+      );
+
+      // Read the generated output JSON synchronously
+      const data = fs.readFileSync(generatorOutputPath, "utf8");
+      const cfiData = JSON.parse(data);
+
+      // Generate and save database data
+      const databaseData = {
+        epubHash: generateFileHash(epubFilePath),
+        cfiData,
+      };
+      fs.writeFileSync(
+        databaseFilePath,
+        JSON.stringify(databaseData, null, 2),
+      );
+
+      return cfiData;
+    } catch (error) {
+      throw new Error(`Error generating CFIs: ${error.message}`);
+    }
+  }
 };
 
 const formatEpubCfi = (startCfi, endCfi, startOffset, endOffset) => {
@@ -100,67 +132,103 @@ const formatEpubCfi = (startCfi, endCfi, startOffset, endOffset) => {
   return `epubcfi(${commonPart.slice(1)},${startEntity},${endEntity})`;
 };
 
+const normalizeWhitespace = (text) => {
+  return text.replace(/\s+/g, "").trim(); // We don't like to add but remove. With that, everything will match
+};
+
 const searchCfiData = (cfiData, searchText) => {
+  // Normalize the search text once
   const normalizedSearchText = normalizeWhitespace(searchText);
-  const flattened = cfiData.flatMap((heading) =>
-    heading.content.map((section) => ({
-      node: normalizeWhitespace(section.node),
-      cfi: section.cfi,
-    }))
-  );
 
-  for (let i = 0; i < flattened.length; i++) {
-    let combinedText = "";
-    let charMap = [];
-    let startCfi = "";
-    let endCfi = "";
-    let startOffset = -1;
-    let endOffset = -1;
+  // Flatten the cfiData and create a list of boundaries (start, end indices) for each node
+  let combinedText = "";
+  let boundaries = []; // [{ cfi, startIdx, endIdx }]
 
-    for (let j = i; j < flattened.length; j++) {
-      const currentNode = flattened[j];
-      const currentText = currentNode.node;
-      const currentTextLength = currentText.length;
+  cfiData.forEach((heading) => {
+    heading.content.forEach((section) => {
+      const nodeText = normalizeWhitespace(section.node);
+      const nodeCfi = section.cfi;
+      const startIdx = combinedText.length;
+      const endIdx = startIdx + nodeText.length;
 
-      charMap.push({
-        cfi: currentNode.cfi,
-        start: combinedText.length,
-        end: combinedText.length + currentTextLength,
+      // Add the boundary information for the current node
+      boundaries.push({
+        cfi: nodeCfi,
+        startIdx,
+        endIdx,
       });
 
-      combinedText += (j > i ? " " : "") + currentText;
+      // Concatenate the node text to the full text
+      combinedText += nodeText;
+    });
+  });
 
-      if (combinedText.includes(normalizedSearchText)) {
-        const startIdx = combinedText.indexOf(normalizedSearchText) - 1;
-        const endIdx = startIdx + normalizedSearchText.length;
+  // Trim the trailing space after concatenation
+  combinedText = combinedText.trim();
 
-        for (const map of charMap) {
-          if (startIdx >= map.start && startIdx < map.end) {
-            startCfi = map.cfi;
-            startOffset = startIdx - map.start;
-          }
-          if (endIdx > map.start && endIdx <= map.end) {
-            endCfi = map.cfi;
-            endOffset = endIdx - map.start;
-          }
-        }
+  // Search for the query in the combined text
+  const startIdx = combinedText.indexOf(normalizedSearchText);
+  if (startIdx === -1) {
+    console.log("------------------------------------------");
+    console.log("Couldn't find the text below from the epub");
+    console.log("------------------------------------------");
+    console.log(normalizedSearchText);
+    console.log("------------------------------------------");
+    throw new Error("Text not found in the EPUB.");
+  }
 
-        return formatEpubCfi(startCfi, endCfi, startOffset, endOffset);
-      }
+  // Calculate the end index of the search text
+  const endIdx = startIdx + normalizedSearchText.length;
+
+  // Find the boundary nodes that correspond to the start and end indices
+  let startCfi = "";
+  let endCfi = "";
+  let startOffset = -1;
+  let endOffset = -1;
+
+  // Loop through the boundaries and find which nodes correspond to the search range
+  for (const boundary of boundaries) {
+    if (startIdx >= boundary.startIdx && startIdx < boundary.endIdx) {
+      startCfi = boundary.cfi;
+      startOffset = startIdx - boundary.startIdx;
+    }
+    if (endIdx > boundary.startIdx && endIdx <= boundary.endIdx) {
+      endCfi = boundary.cfi;
+      endOffset = endIdx - boundary.startIdx;
     }
   }
 
-  throw new Error("Text not found in the EPUB.");
+  // If start or end CFIs are still not found, it means the text spans across multiple nodes
+  if (!startCfi || !endCfi) {
+    throw new Error(
+      "Text spans across multiple nodes and couldn't determine CFIs.",
+    );
+  }
+
+  // Return the formatted result with CFIs and offsets
+  return formatEpubCfi(startCfi, endCfi, startOffset, endOffset);
 };
 
-const searchEpub = async (epubFilePath, searchText) => {
+const searchEpub = (epubFilePath, searchText) => {
   if (!fs.existsSync(epubFilePath)) {
     throw new Error(`File not found at ${epubFilePath}`);
   }
 
-  const { cacheFilePath, outputJsonPath } = getUniqueFilePaths(epubFilePath);
+  const bookName = getBookName(epubFilePath);
+  const generatorOutputPath = path.join(
+    __dirname,
+    `${bookName}_cfi_output.json`,
+  );
+  const databaseFilePath = path.join(
+    __dirname,
+    `database_${generateFileHash(epubFilePath)}.json`,
+  );
 
-  const cfiData = await getCfis(epubFilePath, cacheFilePath, outputJsonPath);
+  const cfiData = getCfisSync(
+    epubFilePath,
+    databaseFilePath,
+    generatorOutputPath,
+  );
   return searchCfiData(cfiData, searchText);
 };
 

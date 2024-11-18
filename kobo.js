@@ -38,6 +38,7 @@ async function processBookmark(row, volumePath, searchEpub) {
 
   try {
     const cfi = await searchEpub(volumePath, text);
+    console.log(`Found CFI for: ${cfi}`);
 
     // Return the annotation data in the specified JSON format
     return {
