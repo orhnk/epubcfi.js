@@ -58,7 +58,7 @@ function getOutputFileNameFromMapping(volumeIdPaths, volumeId) {
   }
 
   // Extract file base name and sanitize
-  const baseName = path.basename(filePath, path.extname(filePath)); // Extract "Sozler - Bediuzzaman Said Nursi" from path
+  const baseName = path.basename(filePath, path.extname(filePath)); // Extract base name like "Sozler - Bediuzzaman Said Nursi"
   const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9_\-]/g, "_"); // Replace unsafe characters
   return `annotations_for_${sanitizedBaseName}.json`; // Create output file name
 }
@@ -79,9 +79,12 @@ async function main() {
   const volumeIdPaths = await loadCachedPaths(); // Make sure to wait for the async load
 
   const result = {}; // Object to classify bookmarks by book (VolumeID)
+  let totalAnnotations = 0; // Total annotations from the database
+  let matchedAnnotations = 0; // Annotations that are successfully processed and saved
 
   try {
     const rows = await fetchBookmarks(dbFilePath);
+    totalAnnotations = rows.length; // Total number of annotations in the database
 
     const processRowPromises = rows.map(async (row) => {
       const volumeId = row.VolumeID;
@@ -110,6 +113,7 @@ async function main() {
           }
 
           result[volumeId].push(annotation); // Add annotation under the correct VolumeID
+          matchedAnnotations++; // Increment matched annotations count
         }
       } catch (err) {
         console.error(err.message);
@@ -122,17 +126,34 @@ async function main() {
     // Save updated cache
     await saveCachedPaths(volumeIdPaths);
 
-    // Save the annotations grouped by VolumeID
-    const outputFileName = getOutputFileNameFromMapping(
-      volumeIdPaths,
-      rows[0].VolumeID,
-    );
-    await fs.promises.writeFile(
-      outputFileName,
-      JSON.stringify(result, null, 2),
-    );
+    // Write the annotations for each VolumeID separately with "annotations" node
+    for (const volumeId of Object.keys(result)) {
+      const outputFileName = getOutputFileNameFromMapping(
+        volumeIdPaths,
+        volumeId,
+      );
+      const annotatedData = { annotations: result[volumeId] }; // Wrap the results in the "annotations" key
+      await fs.promises.writeFile(
+        outputFileName,
+        JSON.stringify(annotatedData, null, 2),
+      );
+      console.log(
+        `Annotations saved for VolumeID ${volumeId}: ${outputFileName}`,
+      );
+    }
 
-    console.log("Annotations saved:", outputFileName);
+    // Assertion to ensure all annotations have been processed
+    if (totalAnnotations !== matchedAnnotations) {
+      console.error(
+        `Mismatch: Total annotations in database (${totalAnnotations}) do not match processed annotations (${matchedAnnotations})`,
+      );
+      process.exit(1); // Exit with error code if there's a mismatch
+    }
+
+    // Display the summary of annotations written
+    console.log(
+      `Successfully written ${matchedAnnotations} out of ${totalAnnotations} annotations.`,
+    );
   } catch (err) {
     console.error(err.message);
   } finally {

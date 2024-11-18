@@ -71,10 +71,12 @@ const getCfis = (epubFilePath, databaseFilePath, generatorOutputPath) => {
 
 const getCfisSync = (epubFilePath, databaseFilePath, generatorOutputPath) => {
   if (isDatabaseValid(epubFilePath, databaseFilePath)) {
+    console.log("Database is valid. Using cached CFIs.");
     const databaseData = JSON.parse(fs.readFileSync(databaseFilePath, "utf8"));
     return databaseData.cfiData;
   } else {
     try {
+      console.log("No database found. Generating CFIs for the first time.");
       // Execute epub-cfi-generator synchronously
       const execSync = require("child_process").execSync;
       execSync(
