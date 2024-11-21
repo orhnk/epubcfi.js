@@ -139,8 +139,10 @@ const normalizeWhitespace = (text) => {
   // Decode HTML entities (e.g., &nbsp; becomes space, &amp; becomes &)
   text = he.decode(text);
 
-  // Normalize spaces (replace multiple spaces with a single space) and trim the text
-  return text.replace(/\s+/g, " ").trim(); // Replace multiple spaces with a single space and trim the text
+  //// Normalize spaces (replace multiple spaces with a single space) and trim the text
+  //return text.replace(/\s+/g, " ").trim(); // Replace multiple spaces with a single space and trim the text
+
+  return text.replace(/\s+/g, "").trim();
 };
 
 const searchCfiData = (cfiData, searchText) => {
