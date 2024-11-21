@@ -1,3 +1,5 @@
+//epubSearcher.js
+const he = require("he");
 const { exec } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -134,7 +136,11 @@ const formatEpubCfi = (startCfi, endCfi, startOffset, endOffset) => {
 };
 
 const normalizeWhitespace = (text) => {
-  return text.replace(/\s+/g, "").trim(); // We don't like to add but remove. With that, everything will match
+  // Decode HTML entities (e.g., &nbsp; becomes space, &amp; becomes &)
+  text = he.decode(text);
+
+  // Normalize spaces (replace multiple spaces with a single space) and trim the text
+  return text.replace(/\s+/g, " ").trim(); // Replace multiple spaces with a single space and trim the text
 };
 
 const searchCfiData = (cfiData, searchText) => {
@@ -145,6 +151,7 @@ const searchCfiData = (cfiData, searchText) => {
   let combinedText = "";
   let boundaries = []; // [{ cfi, startIdx, endIdx }]
 
+  // TODO: Generating the combined text every time is inefficient. We can optimize this.
   cfiData.forEach((heading) => {
     heading.content.forEach((section) => {
       const nodeText = normalizeWhitespace(section.node);

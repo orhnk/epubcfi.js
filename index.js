@@ -1,3 +1,4 @@
+//index.js
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
@@ -86,16 +87,16 @@ async function main() {
     const rows = await fetchBookmarks(dbFilePath);
     totalAnnotations = rows.length; // Total number of annotations in the database
 
-    const processRowPromises = rows.map(async (row) => {
+    for (const row of rows) {
       const volumeId = row.VolumeID;
 
       // Ask the user for the file path if not cached
       if (!volumeIdPaths[volumeId]) {
         try {
-          volumeIdPaths[volumeId] = await askForPath(volumeId, rl);
+          volumeIdPaths[volumeId] = await askForPath(volumeId, rl); // Sequential prompt
         } catch (error) {
           console.error(`Error prompting for path: ${error.message}`);
-          return;
+          continue; // Skip to the next iteration if the path request fails
         }
       }
 
@@ -116,12 +117,9 @@ async function main() {
           matchedAnnotations++; // Increment matched annotations count
         }
       } catch (err) {
-        console.error(err.message);
+        console.error(`Error processing bookmark: ${err.message}`);
       }
-    });
-
-    // Process all rows concurrently
-    await Promise.all(processRowPromises);
+    }
 
     // Save updated cache
     await saveCachedPaths(volumeIdPaths);

@@ -1,4 +1,6 @@
 {
   "file:///mnt/onboard/download11727epub11727.epub": "/home/nixos/Books/Bu Ulke - Cemil Meric.epub",
-  "file:///mnt/onboard/Nursi, Bediuzzaman Said/Sozler - Bediuzzaman Said Nursi.epub": "/home/nixos/Books/Sozler - Bediuzzaman Said Nursi.epub"
+  "file:///mnt/onboard/Nursi, Bediuzzaman Said/Sozler - Bediuzzaman Said Nursi.epub": "/home/nixos/Books/Sozler - Bediuzzaman Said Nursi.epub",
+  "file:///mnt/onboard/Nursi, Bediuzzaman Said/Mesnevi-i Nuriye - Bediuzzaman Said Nursi.epub": "/home/nixos/src/scripts/rustcfi/Mesnevi-i Nuriye - Bediuzzaman Said Nursi.epub",
+  "file:///mnt/onboard/`bdh, `bd alslam mHmd/almnTq walfkr alnsany - `bd alslam mHmd `bdh.epub": "/home/nixos/src/scripts/last/arabic-book.epub"
 }
