@@ -137,7 +137,7 @@ const formatEpubCfi = (startCfi, endCfi, startOffset, endOffset) => {
 
 const normalizeWhitespace = (text) => {
   // Decode HTML entities (e.g., &nbsp; becomes space, &amp; becomes &)
-  text = he.decode(text);
+  //text = he.decode(text);
 
   //// Normalize spaces (replace multiple spaces with a single space) and trim the text
   //return text.replace(/\s+/g, " ").trim(); // Replace multiple spaces with a single space and trim the text
@@ -160,16 +160,23 @@ function findMatchWithOptionalSpaces(query, text) {
 
   for (; text_idx < text.length; text_idx++) {
     const cursor = text[text_idx];
+    console.log(
+      `Query: ${normalizedQuery[query_idx]} | Text: ${
+        text[text_idx]
+      } | Query Idx: ${query_idx} | Text Idx: ${text_idx} | Whitespace Count: ${whitespace_count}`,
+    );
+
     if (cursor === normalizedQuery[query_idx]) {
       query_idx++;
     } else if (cursor.match(/\s/)) {
       whitespace_count++;
     } else {
       query_idx = 0; // Reset the query. We may have future matches.
+      whitespace_count = 0;
     }
 
     if (query_idx === normalizedQuery.length) {
-      return text_idx - query_idx - whitespace_count + 1; // not sure about the +1. But it fixes the leading text search test
+      return text_idx - (query_idx + whitespace_count) + 1; // not sure about the +1. But it fixes the leading text search test
     }
   }
 
@@ -212,6 +219,7 @@ const searchCfiData = (cfiData, searchText) => {
     normalizedSearchText,
     normalizeWhitespace(combinedText),
   );
+
   if (startIdx === -1) {
     console.log("----------------------------------------------");
     console.log("| Couldn't find the text below from the epub |");
@@ -223,6 +231,13 @@ const searchCfiData = (cfiData, searchText) => {
 
   // Calculate the end index of the search text
   const endIdx = startIdx + normalizedSearchText.length;
+
+  console.log();
+  console.log("Queried Text: ", normalizedSearchText);
+  console.log();
+  console.log("Matched Text: ", combinedText.slice(startIdx, endIdx));
+  console.log();
+  console.log();
 
   // Find the boundary nodes that correspond to the start and end indices
   let startCfi = "";
