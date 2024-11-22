@@ -261,10 +261,14 @@ const searchEpub = (epubFilePath, searchText) => {
   const bookName = getBookName(epubFilePath);
   const generatorOutputPath = path.join(
     __dirname,
+    "data",
+    "cfis",
     `${bookName}_cfi_output.json`,
   );
   const databaseFilePath = path.join(
     __dirname,
+    "data",
+    "databases",
     `database_${generateFileHash(epubFilePath)}.json`,
   );
 

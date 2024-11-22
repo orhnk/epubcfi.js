@@ -6,7 +6,12 @@ const { fetchBookmarks, processBookmark } = require("./kobo");
 const { searchEpub } = require("./epubSearcher");
 
 // File path to store the cached paths
-const cacheFilePath = path.resolve(__dirname, "volumePathsCache.json");
+const cacheFilePath = path.resolve(
+  __dirname,
+  "data",
+  "cache",
+  "volumePathsCache.json",
+);
 
 // Load cached paths asynchronously
 async function loadCachedPaths() {
@@ -61,7 +66,7 @@ function getOutputFileNameFromMapping(volumeIdPaths, volumeId) {
   // Extract file base name and sanitize
   const baseName = path.basename(filePath, path.extname(filePath)); // Extract base name like "Sozler - Bediuzzaman Said Nursi"
   const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9_\-]/g, "_"); // Replace unsafe characters
-  return `annotations_for_${sanitizedBaseName}.json`; // Create output file name
+  return `${__dirname}/data/annotations/annotations_for_${sanitizedBaseName}.json`; // Create output file name
 }
 
 async function main() {
