@@ -142,12 +142,41 @@ const normalizeWhitespace = (text) => {
   //// Normalize spaces (replace multiple spaces with a single space) and trim the text
   //return text.replace(/\s+/g, " ").trim(); // Replace multiple spaces with a single space and trim the text
 
-  return text.replace(/\s+/g, "").trim();
+  return text.replace(/\s+/g, " ");
 };
+
+function findMatchWithOptionalSpaces(query, text) {
+  const normalize = (str) => str.replace(/\s+/g, "");
+
+  // Remove spaces from the query
+  const normalizedQuery = normalize(query);
+
+  // Match char by char. Any char can also be an optional space. Unless the query is fully matched, we continue.
+  let query_idx = 0;
+  let text_idx = 0;
+  let whitespace_count = 0;
+
+  for (; text_idx < text.length; text_idx++) {
+    const cursor = text[text_idx];
+    if (cursor === normalizedQuery[query_idx]) {
+      query_idx++;
+    } else if (cursor.match(/\s/)) {
+      whitespace_count++;
+    } else {
+      query_idx = 0; // Reset the query. We may have future matches.
+    }
+
+    if (query_idx === normalizedQuery.length) {
+      return text_idx - query_idx - whitespace_count;
+    }
+  }
+
+  return -1;
+}
 
 const searchCfiData = (cfiData, searchText) => {
   // Normalize the search text once
-  const normalizedSearchText = normalizeWhitespace(searchText);
+  const normalizedSearchText = normalizeWhitespace(searchText.trim());
 
   // Flatten the cfiData and create a list of boundaries (start, end indices) for each node
   let combinedText = "";
@@ -156,6 +185,9 @@ const searchCfiData = (cfiData, searchText) => {
   // TODO: Generating the combined text every time is inefficient. We can optimize this.
   cfiData.forEach((heading) => {
     heading.content.forEach((section) => {
+      // Query: "c e f"
+      //" a b c "
+      //" e f g "
       const nodeText = normalizeWhitespace(section.node);
       const nodeCfi = section.cfi;
       const startIdx = combinedText.length;
@@ -173,11 +205,12 @@ const searchCfiData = (cfiData, searchText) => {
     });
   });
 
-  // Trim the trailing space after concatenation
-  combinedText = combinedText.trim();
-
   // Search for the query in the combined text
-  const startIdx = combinedText.indexOf(normalizedSearchText);
+  const startIdx = normalizeWhitespace(combinedText).indexOf(
+    //const startIdx = findMatchWithOptionalSpaces(
+    normalizedSearchText,
+    //normalizeWhitespace(combinedText),
+  );
   if (startIdx === -1) {
     console.log("------------------------------------------");
     console.log("Couldn't find the text below from the epub");
